@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispo Vélo'v</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .station-info {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .bike-count {
+            font-size: 48px;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .update-time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .refresh-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #station-selector {
+            margin: 10px 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Disponibilité Vélo'v</h1>
+        <div>
+            <label for="station-selector">Numéro de station : </label>
+            <input type="number" id="station-selector">
+            <button onclick="saveStation()">Valider</button>
+        </div>
+        <div class="station-info">
+            <div id="station-name">...</div>
+            <div class="bike-count" id="bike-count">--</div>
+            <div>Places disponibles : <span id="available-docks">--</span></div>
+            <div class="update-time" id="update-time"></div>
+        </div>
+        <button class="refresh-button" onclick="fetchData()">Actualiser</button>
+    </div>
+
+    <script>
+        let selectedStation = localStorage.getItem('velov-station');
+
+        function saveStation() {
+            selectedStation = document.getElementById('station-selector').value;
+            localStorage.setItem('velov-station', selectedStation);
+            fetchData();
+        }
+
+        async function fetchData() {
+            if(!selectedStation) return;
+            
+            try {
+                const response = await fetch('https://download.data.grandlyon.com/ws/rdata/velov_presence/velovpresence.json');
+                const data = await response.json();
+                
+                const station = data.values.find(s => s.number == selectedStation);
+                
+                if(station) {
+                    document.getElementById('bike-count').textContent = station.availablebikes;
+                    document.getElementById('available-docks').textContent = station.availablebikesstands;
+                    document.getElementById('station-name').textContent = station.name;
+                    document.getElementById('update-time').textContent = `Dernière mise à jour : ${new Date().toLocaleTimeString()}`;
+                } else {
+                    alert('Station non trouvée !');
+                }
+            } catch (error) {
+                console.error('Erreur de récupération des données:', error);
+                alert('Erreur de connexion au serveur');
+            }
+        }
+
+        // Actualisation automatique toutes les minutes
+        setInterval(fetchData, 60000);
+        
+        // Chargement initial
+        if(selectedStation) {
+            document.getElementById('station-selector').value = selectedStation;
+            fetchData();
+        }
+    </script>
+</body>
+</html>
